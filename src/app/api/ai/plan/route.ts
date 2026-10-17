@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { callOpencodeLocal, isOpencodeLocal, OPENCODE_LOCAL_DEFAULT_MODEL } from "@/lib/ai/opencode-local";
 
 // POST /api/ai/plan — enrich a rule-built plan with AI-written summary + day details,
 // grounded in verified inventory passed from the client. Never invents prices/names.
@@ -15,8 +16,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "profile and plan are required." }, { status: 400 });
   }
 
-  const url = `${String(baseUrl || "https://text.pollinations.ai/openai").replace(/\/+$/, "")}/chat/completions`;
-  const mdl = String(model || "openai");
+  const useLocal = isOpencodeLocal(baseUrl);
+  const url = useLocal ? "" : `${String(baseUrl || "https://text.pollinations.ai/openai").replace(/\/+$/, "")}/chat/completions`;
+  const mdl = String(model || (useLocal ? OPENCODE_LOCAL_DEFAULT_MODEL : "openai"));
 
   const inventory = [
     plan.packageTitle ? `Package: ${plan.packageTitle} (${plan.packagePrice ?? "?"} INR, /holidays/packages/${plan.packageSlug || ""})` : "Package: none matched",
@@ -39,6 +41,19 @@ export async function POST(req: NextRequest) {
     `Current generic days: ${JSON.stringify((plan.days || []).map((d: any) => ({ day: d.day, title: d.title })))}`;
 
   const call = async () => {
+    if (useLocal) {
+      const local = await callOpencodeLocal({
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+        model: mdl,
+      });
+      if (!local.ok || !local.content) {
+        return { ok: false as const, err: local.errorMessage || "OpenCode local model failed." };
+      }
+      return { ok: true as const, content: local.content };
+    }
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 60000);
     try {

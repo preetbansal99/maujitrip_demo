@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Mic, Settings, Sparkles, Volume2, X, Send, CheckCircle2, Copy, Share2 } from "lucide-react";
 import SiteChrome from "@/components/SiteChrome";
+import ChatMessageContent from "@/components/ChatMessageContent";
 import { inr } from "@/data/demo";
 import {
   blankProfile,
@@ -198,17 +199,17 @@ function PlanCard({ plan, profile, onGuide, guided }: { plan: TripPlan; profile:
               <button
                 type="button"
                 onClick={copyShareLink}
-                className="shrink-0 rounded-full bg-[#023341] px-3.5 py-1 text-xs font-bold text-white transition-colors hover:bg-[#003b53]"
+                className="shrink-0 rounded-full bg-[#023341] px-3.5 py-1 text-[13px] font-bold text-white transition-colors hover:bg-[#003b53]"
               >
                 {copied ? "Copied" : "Copy link"}
               </button>
             </div>
-            <p className="mt-1 text-xs text-green-800">
+            <p className="mt-1 text-[13px] text-green-800">
               Anyone with this link can view this itinerary and continue chatting with Mauji.
             </p>
           </div>
         )}
-        {saveError && <p className="mt-1 text-xs text-red-600">{saveError}</p>}
+        {saveError && <p className="mt-1 text-[13px] text-red-600">{saveError}</p>}
 
         <p className="mt-3 text-sm leading-relaxed text-gray-600">
           Built from this site's own packages, stays and fares. {profile.travellers} travellers
@@ -220,7 +221,8 @@ function PlanCard({ plan, profile, onGuide, guided }: { plan: TripPlan; profile:
 }
 
 const AI_PRESETS = [
-  { label: "Mauji AI (free)", baseUrl: "https://text.pollinations.ai/openai", model: "openai" },
+  { label: "OpenCode Local (this Mac)", baseUrl: "opencode-local", model: "deepseek-v4.1-flash-free" },
+  { label: "Mauji AI (free)", baseUrl: "https://text.pollinations.ai/openai-fast", model: "openai-fast" },
   { label: "OpenAI", baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" },
   { label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", model: "openai/gpt-4o-mini" },
   { label: "Gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai", model: "gemini-2.0-flash" },
@@ -237,14 +239,19 @@ interface AiSettings {
   voiceId: string;
 }
 
-const FREE_AI = { preset: "Mauji AI (free)", baseUrl: "https://text.pollinations.ai/openai", model: "openai", apiKey: "" };
+const FREE_AI = { preset: "Mauji AI (free)", baseUrl: "https://text.pollinations.ai/openai-fast", model: "openai-fast", apiKey: "" };
+
+const LEGACY_POLLI_BASE = "https://text.pollinations.ai/openai";
 
 function loadAiSettings(): AiSettings {
   const base = { ...FREE_AI, ttsBase: "", ttsKey: "", voiceId: "" };
   try {
     const s = JSON.parse(localStorage.getItem("maujitrip-ai") || "{}");
     if (!s.baseUrl) return base;
-    if (s.baseUrl === "https://text.pollinations.ai") s.baseUrl = FREE_AI.baseUrl;
+    if (s.baseUrl === "https://text.pollinations.ai" || s.baseUrl === LEGACY_POLLI_BASE) {
+      s.baseUrl = FREE_AI.baseUrl;
+      if (!s.model || s.model === "openai") s.model = FREE_AI.model;
+    }
     return {
       preset: s.preset || FREE_AI.preset,
       baseUrl: s.baseUrl,
@@ -262,6 +269,7 @@ function loadAiSettings(): AiSettings {
 function needsKey(s: AiSettings | null) {
   if (!s) return true;
   if (s.preset === "Mauji AI (free)") return false;
+  if (s.baseUrl === "opencode-local") return false;
   return !s.apiKey;
 }
 
@@ -692,7 +700,7 @@ export default function PlannerPage() {
   const tripLine = [profile.destination || "Anywhere", profile.days ? `${profile.days} days` : "dates open", `${profile.travellers} travellers`, profile.budget ? inr(profile.budget) : "budget open"].join(" · ");
 
   return (
-    <SiteChrome active="planner">
+    <SiteChrome active="planner" hideFooter>
       <div className="min-h-dvh pb-16 md:pb-0 bg-[#efeeeb]">
         <div className="section-pad pt-20 md:pt-24 pb-8">
           <div className="max-w-2xl mx-auto">
@@ -713,7 +721,10 @@ export default function PlannerPage() {
                 }}
                 className="rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-[#023341] hover:text-white"
               >
-                {settings && (settings.apiKey || settings.preset === "Mauji AI (free)")
+                {settings &&
+                (settings.apiKey ||
+                  settings.preset === "Mauji AI (free)" ||
+                  settings.baseUrl === "opencode-local")
                   ? `AI model: ${settings.model || "custom"}`
                   : "Configure AI key"}
               </button>
@@ -751,13 +762,17 @@ export default function PlannerPage() {
                 <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div className={`max-w-[92%] ${m.role === "user" ? "" : "w-full"}`}>
                     <div
-                      className={`rounded-2xl px-4 py-3 text-base leading-relaxed whitespace-pre-wrap ${
+                      className={`rounded-2xl px-4 py-3 text-base leading-relaxed ${
                         m.role === "user"
                           ? "bg-[#023341] text-white"
                           : "bg-white text-gray-900"
                       }`}
                     >
-                      {m.text}
+                      <ChatMessageContent
+                        content={m.text}
+                        isUser={m.role === "user"}
+                        onChipClick={(choice) => send(choice)}
+                      />
                     </div>
                     {m.role === "ai" && !m.plan && (
                       <div className="mt-1.5">
@@ -811,12 +826,20 @@ export default function PlannerPage() {
               <div ref={bottomRef} />
             </div>
 
+            {/* Bottom spacer so message history scrolls fully above the fixed input bar */}
+            <div className="h-36 md:h-32" />
+          </div>
+        </div>
+
+        {/* Fixed bottom input container */}
+        <div className="fixed bottom-14 md:bottom-0 left-0 right-0 z-40 bg-[#efeeeb] py-3 px-4"> {/* taste-skill-ignore: fixed bottom bar floats above content */}
+          <div className="max-w-2xl mx-auto">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 send(input);
               }}
-              className="sticky bottom-16 md:bottom-4 mt-3 flex items-center gap-2 rounded-2xl bg-white p-2 pl-3"
+              className="flex items-center gap-2 rounded-2xl bg-white p-2 pl-3 border-2 border-[#023341]"
             >
               <button
                 type="button"
@@ -842,17 +865,17 @@ export default function PlannerPage() {
                 <ArrowUp size={18} />
               </button>
             </form>
-            <p className="mt-3 text-sm leading-relaxed text-gray-600">
-              One chat from first idea to booked trip. Plans use this site's own packages, stays and fares.
+            <p className="mt-2 text-xs text-gray-600 text-center">
+              One chat from first idea to booked trip. Built on MaujiTrip packages, stays and live fares.
             </p>
           </div>
         </div>
       </div>
 
       {memoryOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Memory">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMemoryOpen(false)} />
-          <div className="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl"> {/* taste-skill-ignore: dialog floats above the page */}
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl" role="dialog" aria-modal="true" aria-label="Memory"> {/* taste-skill-ignore: dialog floats above the page */}
             <div className="flex items-center justify-between">
               <h3 className="font-display text-lg font-bold text-[#003b53]">What Mauji remembers</h3>
               <button type="button" aria-label="Close" onClick={() => setMemoryOpen(false)} className="rounded-full bg-[#efeeeb] p-1.5 text-gray-700 transition-colors hover:bg-[#023341] hover:text-white">
@@ -884,9 +907,9 @@ export default function PlannerPage() {
       )}
 
       {settingsOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="AI settings">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSettingsOpen(false)} />
-          <div className="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl max-h-[90vh] overflow-y-auto"> {/* taste-skill-ignore: dialog floats above the page */}
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-label="AI settings"> {/* taste-skill-ignore: dialog floats above the page */}
             <div className="flex items-center justify-between">
               <h3 className="font-display text-lg font-bold text-[#003b53]">Connect your AI model</h3>
               <button type="button" aria-label="Close" onClick={() => setSettingsOpen(false)} className="rounded-full bg-[#efeeeb] p-1.5 text-gray-700 transition-colors hover:bg-[#023341] hover:text-white">

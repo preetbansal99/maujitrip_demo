@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { inventoryBlock, readMemory, runTool, TOOL_DEFS } from "@/lib/ai/tools";
 import { buildInventoryBlock, buildSystemPrompt } from "@/lib/ai/system";
+import { callOpencodeLocal, isOpencodeLocal, OPENCODE_LOCAL_DEFAULT_MODEL } from "@/lib/ai/opencode-local";
 
 // Dev-phase: per-request key, never stored. Free built-in preset needs no key.
 export async function POST(req: NextRequest) {
@@ -17,12 +18,15 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
-  let url: string;
-  try {
-    url = baseUrl.replace(/\/+$/, "") + "/chat/completions";
-    new URL(url);
-  } catch {
-    return NextResponse.json({ error: "Invalid baseUrl." }, { status: 400 });
+  const useLocal = isOpencodeLocal(baseUrl);
+  let url = "";
+  if (!useLocal) {
+    try {
+      url = baseUrl.replace(/\/+$/, "") + "/chat/completions";
+      new URL(url);
+    } catch {
+      return NextResponse.json({ error: "Invalid baseUrl." }, { status: 400 });
+    }
   }
 
   const call = async (msgs: any[], tools?: any) => {
@@ -86,56 +90,77 @@ export async function POST(req: NextRequest) {
     });
 
     let convo = [{ role: "system", content: system }, ...messages];
-    let first = await call(convo, TOOL_DEFS);
-
-    // Fallback: model without tool support → plain chat (client Generate button still builds plans).
-    if (!first.ok && /tool/i.test((first as any).err || "")) {
-      first = await call(convo);
-    }
-    if (!first.ok) {
-      return NextResponse.json(
-        { error: `${(first as any).err} The free model is busy. Tap send again to retry.` },
-        { status: 502 }
-      );
-    }
-
+    let first: any;
     let plan: any = null;
-    for (let i = 0; i < 4; i++) {
-      const msg = first.data.choices[0].message;
-      const calls = msg?.tool_calls;
-      if (!calls || calls.length === 0) {
-        return NextResponse.json({ reply: msg?.content || "…", model: first.data?.model || model, plan });
-      }
-      convo = [...convo, msg];
-      for (const c of calls.slice(0, 4)) {
-        let args: any = {};
-        try {
-          args = JSON.parse(c.function?.arguments || "{}");
-        } catch {
-          /* keep empty */
-        }
-        const out = await runTool(c.function?.name, args);
-        if (c.function?.name === "build_trip_plan") {
-          try {
-            const j = JSON.parse(out);
-            if (j?.plan) plan = j.plan;
-          } catch {
-            /* text fallback */
-          }
-        }
-        convo = [
-          ...convo,
-          { role: "tool", tool_call_id: c.id, name: c.function?.name, content: String(out).slice(0, 4000) },
-        ];
-      }
-      const next = await call(convo, TOOL_DEFS);
-      if (!next.ok) {
+    if (useLocal) {
+      const local = await callOpencodeLocal({
+        messages: convo.map((m: any) => ({ role: m.role, content: m.content })),
+        model: model || OPENCODE_LOCAL_DEFAULT_MODEL,
+      });
+      if (!local.ok || !local.content) {
         return NextResponse.json(
-          { reply: "I hit a snag reaching trip data. Tap send again to retry.", plan },
-          { status: 200 }
+          { error: `${local.errorMessage || "OpenCode local model failed."} Tap send again to retry.` },
+          { status: 502 }
         );
       }
-      first = next;
+      first = {
+        ok: true,
+        data: {
+          model: local.model,
+          choices: [{ message: { role: "assistant", content: local.content } }],
+        },
+      };
+    } else {
+      first = await call(convo, TOOL_DEFS);
+
+      // Fallback: model without tool support → plain chat (client Generate button still builds plans).
+      if (!first.ok && /tool/i.test((first as any).err || "")) {
+        first = await call(convo);
+      }
+      if (!first.ok) {
+        return NextResponse.json(
+          { error: `${(first as any).err} The free model is busy. Tap send again to retry.` },
+          { status: 502 }
+        );
+      }
+
+      for (let i = 0; i < 4; i++) {
+        const msg = first.data.choices[0].message;
+        const calls = msg?.tool_calls;
+        if (!calls || calls.length === 0) {
+          return NextResponse.json({ reply: msg?.content || "…", model: first.data?.model || model, plan });
+        }
+        convo = [...convo, msg];
+        for (const c of calls.slice(0, 4)) {
+          let args: any = {};
+          try {
+            args = JSON.parse(c.function?.arguments || "{}");
+          } catch {
+            /* keep empty */
+          }
+          const out = await runTool(c.function?.name, args);
+          if (c.function?.name === "build_trip_plan") {
+            try {
+              const j = JSON.parse(out);
+              if (j?.plan) plan = j.plan;
+            } catch {
+              /* text fallback */
+            }
+          }
+          convo = [
+            ...convo,
+            { role: "tool", tool_call_id: c.id, name: c.function?.name, content: String(out).slice(0, 4000) },
+          ];
+        }
+        const next = await call(convo, TOOL_DEFS);
+        if (!next.ok) {
+          return NextResponse.json(
+            { reply: "I hit a snag reaching trip data. Tap send again to retry.", plan },
+            { status: 200 }
+          );
+        }
+        first = next;
+      }
     }
     const last = first.data.choices[0].message;
     return NextResponse.json({ reply: last?.content || "…", model: first.data?.model || model, plan });
