@@ -8,6 +8,7 @@ node_modules/
 out/
 dist/
 build/
+next-env.d.ts
 
 # Environment
 .env
@@ -17,6 +18,13 @@ build/
 # Runtime data (user-generated plans / memory)
 data/
 !src/data/
+
+# Internal Agent & Tooling
+.agents/
+.opencode/
+.taste-skill/
+AGENTS.md
+HANDOFF.md
 
 # Logs
 npm-debug.log*
