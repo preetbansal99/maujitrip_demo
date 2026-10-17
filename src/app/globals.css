@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Poppins", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: #003b53;
+  --color-deep: #023341;
+  --color-deep-dark: #0a2e3e;
+  --color-brand: #f74800;
+  --color-brand-dark: #c2410c;
+  --color-rust: #c0392b;
+  --color-cream: #efeeeb;
+  --color-sand: #f5f2ec;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-sand);
+  color: #1f2937;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.section-pad {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+@media (min-width: 640px) {
+  .section-pad {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+.section-y {
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+}
+@media (min-width: 768px) {
+  .section-y {
+    padding-top: 3.5rem;
+    padding-bottom: 3.5rem;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes fadeInBackdrop {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.drawer-enter {
+  animation: slideInRight 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+.backdrop-enter {
+  animation: fadeInBackdrop 0.25s ease forwards;
+}
+
+.sticky-deck {
+  height: 1256px;
+  position: relative;
+}
+.sticky-deck--6 {
+  height: 1832px;
+}
+.sticky-card {
+  height: 272px;
+  position: sticky;
+}
+.sticky-card:first-child {
+  z-index: 1;
+  margin-top: 0px;
+  top: 72px;
+}
+.sticky-card:nth-child(2) {
+  z-index: 2;
+  margin-top: 16px;
+  top: 84px;
+}
+.sticky-card:nth-child(3) {
+  z-index: 3;
+  margin-top: 16px;
+  top: 96px;
+}
+.sticky-card:nth-child(4) {
+  z-index: 4;
+  margin-top: 16px;
+  top: 108px;
+}
+.sticky-card:nth-child(5) {
+  z-index: 5;
+  margin-top: 16px;
+  top: 120px;
+}
+.sticky-card:nth-child(6) {
+  z-index: 6;
+  margin-top: 16px;
+  top: 132px;
+}

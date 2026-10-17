@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Favicon (file .jpg hai, isliye type image/jpeg) -->
+    <link rel="icon" type="image/jpeg" href="/favicon.jpg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Preconnect for performance: only origins we actually load from -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://images.unsplash.com" />
+
+    <!-- DNS-prefetch fallback for browsers that don't support preconnect -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://images.unsplash.com" />
+
+    <!--
+      Hero image ka preload yahan se hata diya hai: yeh file har page par chalti hai,
+      lekin Hero image sirf Home page par hai. Home page ki <img> par
+      fetchPriority="high" lagao.
+    -->
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-KF8PPF4');</script>
+	<!-- End Google Tag Manager -->
+
+    <!-- Theme colour for mobile browsers -->
+    <meta name="theme-color" content="#003b53" />
+    <script type="module" crossorigin src="/assets/index-plQtCCqe.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/vendor-react-B25IT4ce.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-query-BlETNCFO.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-seo-Coj4-dRN.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-router-Cwh1YYIy.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-axios-B8_nURbH.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-ui-CS001pUX.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-BRO0tpOt.css">
+  </head>
+  <body>
+	  <!-- Google Tag Manager (noscript) -->
+	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KF8PPF4"
+	height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+	<!-- End Google Tag Manager (noscript) -->
+    <div id="root"></div>
+  </body>
+</html>
