@@ -1,16 +1,15 @@
 # HANDOFF — MaujiTrip Clone + AI Chatbot
 
-> **Status: Sat Oct 17, 2026 (morning).** Full site clone (24 pages) + **agentic AI chatbot**
+> **Status: Sat Oct 17, 2026 (mid-day).** Full site clone (24 pages) + **agentic AI chatbot**
 > with tools, memory, sessions, voice, **trip plan persistence API (`/api/plans`)**,
-> **dedicated shareable view route (`/planner/[id]`)**, and **human-like travel consultant persona**.
-> `npm run build` is clean (38 routes: +`/api/plans`, +`/api/plans/[id]`, +`/planner/[id]`). Dev server: `http://localhost:3000`
-> (`npm run dev` in `/Users/preetbansal/maujitrip1currentsite`).
+> **dedicated shareable view route (`/planner/[id]`)**, **human-like travel consultant persona**,
+> **rich markdown table and CTA rendering (`ChatMessageContent`)**, and **fixed bottom chat input bar**.
+> `npm run build` is clean (38 routes). Dev server: `http://localhost:3000` (`npm run dev` in `/Users/preetbansal/maujitrip1currentsite`).
 > Destination isolation fixed (Oct 17): `buildPlan()` in `src/lib/planner/engine.ts` and `list_packages`
 > in `src/lib/ai/tools.ts` strictly filter packages for the requested destination; queries for Kerala
 > under 1 lakh match real Kerala packages and never fall back across inventory to Dubai.
 > LLM custom itineraries: if a destination or custom itinerary has no pre-made package, the planner
-> crafts a customized day-by-day itinerary with realistic budget estimates and links to live flights/hotels,
-> instead of forcing unrelated packages.
+> crafts a customized day-by-day itinerary with realistic budget estimates and links to live flights/hotels.
 > Web search added: `search_web` tool integrated into `/api/ai/chat` agent loop using Wikivoyage and
 > Wikipedia travel encyclopedias (plus optional Tavily API) for live destination facts, sights, and weather.
 > Comprehensive company knowledge: Mauji knows all MaujiTrip services (flights with 0 convenience fee,
@@ -18,7 +17,14 @@
 > Noida head office, payment methods, and 5-7 day refunds under /cancellation-refund).
 > Human-like conversational tone & polite scope denials: off-topic queries (coding, homework, politics)
 > are politely and naturally declined like a real human consultant while steering back to travel.
-> Taste skill lint gate: 0 FAIL maintained. Dev server running fresh on :3000.
+> Rich Chat UI (`ChatMessageContent`): parses markdown pipe tables into high-contrast ticket-ledger tables
+> (with cell bullet lists, brand orange dots, and alternating fills), converts site URLs into 1-click CTA buttons,
+> and auto-extracts numbered next steps into interactive quick-reply chips.
+> Fixed Bottom Bar: input bar is fixed at the bottom above mobile BottomNav (`fixed bottom-14 md:bottom-0`),
+> with full-height dedicated app layout and `hideFooter` on `/planner`.
+> Taste skill lint gate: 0 FAIL maintained across all files. Dev server running fresh on :3000.
+> Auto-refresh fix (Oct 17): Cleared stale .next compilation cache causing Turbopack HMR reload loops;
+> guarded BottomNav Chatbot link to prevent hard window.location reloads when already on /planner.
 
 ---
 

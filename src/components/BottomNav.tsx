@@ -111,7 +111,16 @@ export default function BottomNav({ onAccount }: { onAccount: () => void }) {
         else window.location.href = "/#offers-heading";
       },
     },
-    { label: "Chatbot", icon: (on: boolean) => <ChatIcon active={on} />, action: () => (window.location.href = "/planner") },
+    {
+      label: "Chatbot",
+      icon: (on: boolean) => <ChatIcon active={on} />,
+      action: () => {
+        if (typeof window !== "undefined" && window.location.pathname === "/planner") {
+          return;
+        }
+        window.location.href = "/planner";
+      },
+    },
     { label: "MyTrip", icon: (on: boolean) => <BagIcon active={on} />, action: onAccount },
   ];
 
